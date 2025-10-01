@@ -18,27 +18,6 @@ public class FakeCommandSource extends ClientCommandSource {
     private final ClientPlayerEntity player;
     public FakeCommandSource(final MinecraftClient mc, final ClientPlayerEntity player) {
         super(mc.getNetworkHandler(), mc, true);
-//        super(new CommandOutput() {
-//            @Override
-//            public void sendMessage(Text message) {
-//                player.sendMessage(message, false);
-//            }
-//
-//            @Override
-//            public boolean shouldReceiveFeedback() {
-//                return true;
-//            }
-//
-//            @Override
-//            public boolean shouldTrackOutput() {
-//                return false;
-//            }
-//
-//            @Override
-//            public boolean shouldBroadcastConsoleToOps() {
-//                return false;
-//            }
-//        }, player.getPos(), player.getRotationClient(), null, 0, player.getNameForScoreboard(), player.getName(), null, player);
         this.mc = mc;
         this.player = player;
     }
@@ -56,6 +35,6 @@ public class FakeCommandSource extends ClientCommandSource {
         final var networkHandler = mc.getNetworkHandler();
         if(networkHandler == null)
             return new ArrayList<>();
-        return networkHandler.getPlayerList().stream().map(e -> e.getProfile().getName()).collect(Collectors.toList());
+        return networkHandler.getPlayerList().stream().map(e -> e.getProfile().name()).collect(Collectors.toList());
     }
 }

@@ -13,7 +13,6 @@ import net.minecraft.client.input.KeyboardInput;
 import net.minecraft.client.network.ClientCommandSource;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
-import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.command.CommandRegistryAccess;
@@ -37,10 +36,8 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -263,7 +260,7 @@ public class AutoLectern implements ClientModInitializer {
         return null;
     }
 
-    private void preBreak(final ClientPlayerEntity plr, @Nullable final ClientPlayerInteractionManager interactionManager, @Nullable final ParticleManager partMan) {
+    private void preBreak(final ClientPlayerEntity plr, @Nullable final ClientPlayerInteractionManager interactionManager, final ClientWorld world) {
         if(prevSelectedSlot != -1) {
             plr.getInventory().setSelectedSlot(prevSelectedSlot);
             prevSelectedSlot = -1;
@@ -272,8 +269,7 @@ public class AutoLectern implements ClientModInitializer {
             checkPreserveTool(plr);
         else if(plr.getMainHandStack().isEmpty())
             equipWorkingTool(plr);
-        if(partMan != null)
-            partMan.addBlockBreakingParticles(lecternPos, lecternSide);
+        world.spawnBlockBreakingParticle(lecternPos, lecternSide);
         if(interactionManager == null)
             return;
         interactionManager.updateBlockBreakingProgress(lecternPos, lecternSide);
@@ -338,7 +334,7 @@ public class AutoLectern implements ClientModInitializer {
                     plr.input = new DummyInput();
                     fakePitch = plr.getPitch();
                     fakeYaw = plr.getYaw();
-                    forcedPos = plr.getPos();
+                    forcedPos = plr.getEntityPos();
                     lecternPos = blockHitResult.getBlockPos();
                     lecternSide = blockHitResult.getSide();
                     curState = ALState.BREAKING;
@@ -361,9 +357,7 @@ public class AutoLectern implements ClientModInitializer {
                             continue;
                     } else if(plr.getMainHandStack().isEmpty())
                         equipWorkingTool(plr);
-                    final var partMan = mc.particleManager;
-                    if(partMan != null)
-                        partMan.addBlockBreakingParticles(lecternPos, lecternSide);
+                    world.spawnBlockBreakingParticle(lecternPos, lecternSide);
                     interactionManager.updateBlockBreakingProgress(lecternPos, lecternSide);
                     plr.swingHand(Hand.MAIN_HAND);
                     if(world.getBlockState(lecternPos).isAir()) {
@@ -435,7 +429,7 @@ public class AutoLectern implements ClientModInitializer {
                         }
                         if(tickCoolDown > 0) {
                             if(preBreaking)
-                                preBreak(plr, mc.interactionManager, mc.particleManager);
+                                preBreak(plr, mc.interactionManager, mc.world);
                             --tickCoolDown;
                             return;
                         }
@@ -457,7 +451,7 @@ public class AutoLectern implements ClientModInitializer {
                     tickCoolDown = 5;
                     signals = 0;
                     curState = ALState.WAITING_TRADE;
-                    final var villagePos = updatedVillager.getPos();
+                    final var villagePos = updatedVillager.getEntityPos();
                     final var eyePos = plr.getEyePos();
                     final var box = plr.getBoundingBox().expand(20.0, 20.0, 20.0);
                     final var hitResult = ProjectileUtil.raycast(plr, eyePos, villagePos, box, x -> x.equals(updatedVillager), 20);
@@ -519,7 +513,7 @@ public class AutoLectern implements ClientModInitializer {
                     plr.move(MovementType.SELF, new Vec3d(forcedPos.getX()-plr.getX(), -0.00001, forcedPos.getZ()-plr.getZ()));
                     if(tickCoolDown > 0) {
                         if(preBreaking)
-                            preBreak(plr, mc.interactionManager, mc.particleManager);
+                            preBreak(plr, mc.interactionManager, mc.world);
                         --tickCoolDown;
                         return;
                     }

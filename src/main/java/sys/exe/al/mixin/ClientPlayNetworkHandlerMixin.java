@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.network.*;
+import net.minecraft.client.render.entity.state.EntityRenderState;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.Entity;
@@ -44,7 +45,6 @@ import sys.exe.al.commands.ClientCommandManager;
 import sys.exe.al.interfaces.ExtraVillagerData;
 
 import static sys.exe.al.AutoLectern.SIGNAL_ITEM;
-
 
 @Mixin(ClientPlayNetworkHandler.class)
 public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkHandler {
@@ -154,7 +154,7 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
             return;
         if (!(entity instanceof final VillagerEntity vil))
             return;
-        if (AL.getLecternPos().getSquaredDistance(vil.getPos()) > 8)
+        if (AL.getLecternPos().getSquaredDistance(vil.getEntityPos()) > 8)
             return;
         if (!vil.getVillagerData().profession().matchesKey(VillagerProfession.LIBRARIAN))
             return;
@@ -165,7 +165,7 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
     }
 
     @Inject(method = "onItemPickupAnimation", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/ItemEntity;getStack()Lnet/minecraft/item/ItemStack;"), locals = LocalCapture.CAPTURE_FAILSOFT)
-    private void onItemPickupAnimation(ItemPickupAnimationS2CPacket packet, CallbackInfo ci, Entity entity, LivingEntity livingEntity, ItemEntity itemEntity) {
+    private void onItemPickupAnimation(final ItemPickupAnimationS2CPacket packet, final CallbackInfo ci, final Entity entity, final LivingEntity livingEntity, final EntityRenderState entityRenderState, final ItemEntity itemEntity) {
         final var AL = AutoLectern.getInstance();
         if (AL.getState() != ALState.WAITING_ITEM) return;
         if (itemEntity.getStack().getItem() == Items.LECTERN)
@@ -201,7 +201,7 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
                             , false);
                 }
                 assert enchant.getKey().isPresent();
-                final var goalMet = AL.getGoalMet(plr.getWorld(), offer.getOriginalFirstBuyItem().getCount(), enchant.getKey().get().getValue(), lvl);
+                final var goalMet = AL.getGoalMet(plr.getEntityWorld(), offer.getOriginalFirstBuyItem().getCount(), enchant.getKey().get().getValue(), lvl);
                 if (goalMet != -1) {
                     AL.setLastGoalMet(goalMet);
                     return curIdx;
@@ -269,7 +269,7 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
     }
 
 
-    @Inject(method = "onSetTradeOffers", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/util/thread/ThreadExecutor;)V", shift = At.Shift.AFTER), cancellable = true)
+    @Inject(method = "onSetTradeOffers", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/NetworkThreadUtils;forceMainThread(Lnet/minecraft/network/packet/Packet;Lnet/minecraft/network/listener/PacketListener;Lnet/minecraft/network/PacketApplyBatcher;)V", shift = At.Shift.AFTER), cancellable = true)
     private void onSetTradeOffers(final SetTradeOffersS2CPacket packet, final CallbackInfo ci) {
         if (packet.getSyncId() != merchantSyncId) return;
         determineTrades(packet.getOffers());
