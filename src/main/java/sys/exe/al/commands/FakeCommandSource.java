@@ -17,7 +17,7 @@ public class FakeCommandSource extends ClientCommandSource {
     public final MinecraftClient mc;
     private final ClientPlayerEntity player;
     public FakeCommandSource(final MinecraftClient mc, final ClientPlayerEntity player) {
-        super(mc.getNetworkHandler(), mc, true);
+        super(mc.getNetworkHandler(), mc, (perm) -> true);
         this.mc = mc;
         this.player = player;
     }
