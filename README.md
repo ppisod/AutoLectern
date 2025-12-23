@@ -1,4 +1,4 @@
-# Auto Lectern (Fabric):
+# Auto Lectern (Fabric) - ppisod's fork:
 <img src="./src/main/resources/assets/pack.png" width="128" style="max-width: 100%;"></img><br>
 This mod basically breaks and places lecterns to cycle trades for you.
 ## Usage:
