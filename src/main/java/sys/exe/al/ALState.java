@@ -9,5 +9,6 @@ public enum ALState {
     PLACING,
     WAITING_PROF,
     INTERACT_VIL,
-    WAITING_TRADE
+    WAITING_TRADE,
+    COLLECTING_ITEM
 }

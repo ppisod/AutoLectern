@@ -7,6 +7,8 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ClientPlayerInteractionManager;
 import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerInventory;
@@ -36,6 +38,8 @@ import sys.exe.al.util.tool.ToolsUtility;
 import sys.exe.al.util.villager.EnchantUtility;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class AutoLecterner {
@@ -75,6 +79,7 @@ public class AutoLecterner {
     public int attempts = 0;
     private int originalSlot;
     private int DelayTicks = 0;
+    private int REALDelay = 0;
     public int lastGoalMet = 0;
     public int UUID = 0;
 
@@ -107,6 +112,11 @@ public class AutoLecterner {
             Stop();
             return;
         }
+
+        if (REALDelay > 0) {
+            --REALDelay;
+            return;
+        }
         while (true) {
 
             switch (State) {
@@ -133,6 +143,10 @@ public class AutoLecterner {
                 case ALState.INTERACT_VIL -> InteractWithVillager(player, interaction);
                 case ALState.WAITING_TRADE -> {
                     boolean toReturn = WaitingForTrade (mc, player);
+                    if (toReturn) return;
+                }
+                case ALState.COLLECTING_ITEM -> {
+                    boolean toReturn = MoveToCollectLecterns (mc, player, world);
                     if (toReturn) return;
                 }
             }
@@ -195,6 +209,10 @@ public class AutoLecterner {
         if (hr == null) {Stop(); return false;}
 
         final var LecternHand = EquipItem(player, Items.LECTERN);
+        if (LecternHand == null) {
+            State = ALState.COLLECTING_ITEM;
+            return false;
+        }
         Place(player, interaction, hr, LecternHand);
 
         if (!world.getBlockState(LecternPosition.pos).isOf(Blocks.LECTERN)) return true;
@@ -321,6 +339,46 @@ public class AutoLecterner {
         FocusedVillager = null;
         SendMessage(mc, "Stopped.", Formatting.RED);
         State = ALState.STOPPED;
+    }
+
+    private boolean MoveToCollectLecterns (final MinecraftClient mc, ClientPlayerEntity player, ClientWorld world) {
+        // delay 1 tick per move
+
+        // check if there are lecterns in inv, and if so, change state to placing lecterns
+        if (Signals.isSet(SignalManager.Signal.ITEM)) {
+            State = ALState.PLACING;
+            AntiDrift(player);
+            return false;
+        }
+
+        // Find all items that are lecterns
+        Iterable<Entity> entities = world.getEntities();
+        ArrayList<ItemEntity> lecternItemsForPickup = new ArrayList<>();
+        entities.forEach(entity -> {
+            if (entity instanceof ItemEntity item && item.getStack().getItem() == Items.LECTERN) {
+                if (item.getBlockPos().getSquaredDistance(player.getBlockPos()) > 5) { return; }
+                lecternItemsForPickup.add(item);
+            }
+        });
+        // for now just get the first?
+        if (lecternItemsForPickup.isEmpty()) {
+            State = ALState.PLACING;
+            AntiDrift(player);
+            return true;
+        }
+
+        ItemEntity first = lecternItemsForPickup.getFirst();
+        if (first == null) {
+            Stop(); return true;
+        }
+
+        // try to walk in that direction
+        Vec3d direction = new Vec3d(first.getX() - player.getX(), -0.00001, first.getZ() - player.getZ());
+        direction = direction.normalize();
+        direction = direction.multiply(0.1);
+
+        player.setVelocity(direction);
+        return true;
     }
 
     /* --- helpers down here --- */
