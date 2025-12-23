@@ -18,12 +18,12 @@ public class ClientCommonNetworkHandlerMixin {
     @Redirect(method = "sendPacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/network/ClientConnection;send(Lnet/minecraft/network/packet/Packet;)V"))
     private void onSendPacket(final ClientConnection instance, final Packet<?> packet){
         final var AL = AutoLectern.getInstance();
-        if(AL.getState() == ALState.STOPPED)
+        if(AL.lec.getState() == ALState.STOPPED)
             instance.send(packet);
         else if(packet instanceof PlayerMoveC2SPacket.Full mp)
-            instance.send(new PlayerMoveC2SPacket.Full(mp.getX(0), mp.getY(0), mp.getZ(0), AL.getYaw(), AL.getPitch(), mp.isOnGround(), mp.horizontalCollision()));
+            instance.send(new PlayerMoveC2SPacket.Full(mp.getX(0), mp.getY(0), mp.getZ(0), AL.lec.getExpectedPlayerPosition().yaw, AL.lec.getExpectedPlayerPosition().pitch, mp.isOnGround(), mp.horizontalCollision()));
         else if (packet instanceof PlayerMoveC2SPacket.LookAndOnGround mp)
-            instance.send(new PlayerMoveC2SPacket.LookAndOnGround(AL.getYaw(), AL.getPitch(), mp.isOnGround(), mp.horizontalCollision()));
+            instance.send(new PlayerMoveC2SPacket.LookAndOnGround(AL.lec.getExpectedPlayerPosition().yaw, AL.lec.getExpectedPlayerPosition().pitch, mp.isOnGround(), mp.horizontalCollision()));
         else
             instance.send(packet);
     }

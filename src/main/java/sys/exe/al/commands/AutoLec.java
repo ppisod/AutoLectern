@@ -23,6 +23,7 @@ import sys.exe.al.ALAutoTrade;
 import sys.exe.al.ALGoal;
 import sys.exe.al.ALState;
 import sys.exe.al.AutoLectern;
+import sys.exe.al.util.villager.EnchantUtility;
 
 import static sys.exe.al.commands.ClientCommandManager.addClientSideCommand;
 
@@ -52,7 +53,7 @@ public class AutoLec {
                 .then(literal("start")
                         .executes(ctx -> {
                             final var AL = AutoLectern.getInstance();
-                            if(AL.getState() != ALState.STOPPED) {
+                            if(AL.lec.getState() != ALState.STOPPED) {
                                 ((FakeCommandSource) ctx.getSource()).mc.inGameHud.getChatHud().addMessage(Text.literal("[Auto Lectern] ")
                                         .formatted(Formatting.YELLOW)
                                         .append(
@@ -62,7 +63,7 @@ public class AutoLec {
                                 );
                                 return 0;
                             }
-                            AL.setState(ALState.STARTING);
+                            AL.lec.setState(ALState.STARTING);
                             return 0;
                         }
                     )
@@ -70,7 +71,7 @@ public class AutoLec {
                 .then(literal("stop")
                         .executes(ctx -> {
                             final var AL = AutoLectern.getInstance();
-                            if(AL.getState() == ALState.STOPPED) {
+                            if(AL.lec.getState() == ALState.STOPPED) {
                                 ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                                         .formatted(Formatting.YELLOW)
                                         .append(
@@ -80,7 +81,7 @@ public class AutoLec {
                                 );
                                 return 0;
                             }
-                            AL.setState(ALState.STOPPING);
+                            AL.lec.setState(ALState.STOPPING);
                             return 0;
                         }
                     )
@@ -89,10 +90,10 @@ public class AutoLec {
                         .then(literal("item")
                                 .executes(ctx -> {
                                     final var AL = AutoLectern.getInstance();
-                                    AL.itemSync = !AL.itemSync;
+                                    AL.lec.Config.ItemSync = !AL.lec.Config.ItemSync;
                                     ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                                             .formatted(Formatting.YELLOW)
-                                            .append(Text.literal("Item Sync is now " + (AL.itemSync ? "ON" : "OFF"))
+                                            .append(Text.literal("Item Sync is now " + (AL.lec.Config.ItemSync ? "ON" : "OFF"))
                                                     .formatted(Formatting.WHITE)
                                             )
                                     );
@@ -102,10 +103,10 @@ public class AutoLec {
                 )
                 .then(literal("breakCooldown").executes(ctx -> {
                     final var AL = AutoLectern.getInstance();
-                    AL.breakCooldown = !AL.breakCooldown;
+                    AL.lec.Config.BreakCooldown = !AL.lec.Config.BreakCooldown;
                     ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                             .formatted(Formatting.YELLOW)
-                            .append(Text.literal("Break cooldown is now " + (AL.breakCooldown ? "ON" : "OFF"))
+                            .append(Text.literal("Break cooldown is now " + (AL.lec.Config.BreakCooldown ? "ON" : "OFF"))
                                     .formatted(Formatting.WHITE)
                             )
                     );
@@ -114,7 +115,7 @@ public class AutoLec {
                 .then(literal("autoTrade")
                         .then(literal("ENCHANT").executes(ctx -> {
                             final var AL = AutoLectern.getInstance();
-                            AL.autoTrade = ALAutoTrade.ENCHANT;
+                            AL.lec.Config.AutoTrade = ALAutoTrade.ENCHANT;
                             ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                                     .formatted(Formatting.YELLOW)
                                     .append(Text.literal("Auto Trading Mode is now set to ENCHANT.")
@@ -125,7 +126,7 @@ public class AutoLec {
                         }))
                         .then(literal("CHEAPEST").executes(ctx -> {
                             final var AL = AutoLectern.getInstance();
-                            AL.autoTrade = ALAutoTrade.CHEAPEST;
+                            AL.lec.Config.AutoTrade = ALAutoTrade.CHEAPEST;
                             ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                                     .formatted(Formatting.YELLOW)
                                     .append(Text.literal("Auto Trading Mode is now set to CHEAPEST.")
@@ -136,7 +137,7 @@ public class AutoLec {
                         }))
                         .then(literal("OFF").executes(ctx -> {
                             final var AL = AutoLectern.getInstance();
-                            AL.autoTrade = ALAutoTrade.OFF;
+                            AL.lec.Config.AutoTrade = ALAutoTrade.OFF;
                             ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                                     .formatted(Formatting.YELLOW)
                                     .append(Text.literal("Auto Trading Mode is now set to OFF.")
@@ -148,10 +149,10 @@ public class AutoLec {
                 )
                 .then(literal("log").executes(ctx -> {
                     final var AL = AutoLectern.getInstance();
-                    AL.logTrade = !AL.logTrade;
+                    AL.lec.Config.LogTrade = !AL.lec.Config.LogTrade;
                     ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                             .formatted(Formatting.YELLOW)
-                            .append(Text.literal("Logging is now " + (AL.logTrade ? "ON" : "OFF"))
+                            .append(Text.literal("Logging is now " + (AL.lec.Config.LogTrade ? "ON" : "OFF"))
                                     .formatted(Formatting.WHITE)
                             )
                     );
@@ -159,10 +160,10 @@ public class AutoLec {
                 }))
                 .then(literal("preBreak").executes(ctx -> {
                     final var AL = AutoLectern.getInstance();
-                    AL.preBreaking = !AL.preBreaking;
+                    AL.lec.Config.PreBreak = !AL.lec.Config.PreBreak;
                     ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                             .formatted(Formatting.YELLOW)
-                            .append(Text.literal("Pre breaking is now " + (AL.preBreaking ? "ON" : "OFF"))
+                            .append(Text.literal("Pre breaking is now " + (AL.lec.Config.PreBreak ? "ON" : "OFF"))
                                     .formatted(Formatting.WHITE)
                             )
                     );
@@ -170,10 +171,10 @@ public class AutoLec {
                 }))
                 .then(literal("preserveTool").executes(ctx -> {
                     final var AL = AutoLectern.getInstance();
-                    AL.preserveTool = !AL.preserveTool;
+                    AL.lec.Config.PreserveTool = !AL.lec.Config.PreserveTool;
                     ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                             .formatted(Formatting.YELLOW)
-                            .append(Text.literal("Tool preserving is now " + (AL.preserveTool ? "ON" : "OFF"))
+                            .append(Text.literal("Tool preserving is now " + (AL.lec.Config.PreserveTool ? "ON" : "OFF"))
                                     .formatted(Formatting.WHITE)
                             )
                     );
@@ -182,8 +183,8 @@ public class AutoLec {
                 .then(createAddGoalSubcommand(registryAccess))
                 .then(literal("clear").executes(ctx -> {
                     final var AL = AutoLectern.getInstance();
-                    AL.getGoals().clear();
-                    AL.incrementUUID();
+                    AL.lec.Config.Goals.clear();
+                    AL.lec.incUUID();
                     ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                             .formatted(Formatting.YELLOW)
                             .append(
@@ -208,10 +209,10 @@ public class AutoLec {
                 )
                 .then(literal("autoRemove").executes(ctx -> {
                     final var AL = AutoLectern.getInstance();
-                    AL.autoRemove = !AL.autoRemove;
+                    AL.lec.Config.AutoRemove = !AL.lec.Config.AutoRemove;
                     ((FakeCommandSource)ctx.getSource()).sendMessage(Text.literal("[Auto Lectern] ")
                             .formatted(Formatting.YELLOW)
-                            .append(Text.literal("Auto remove is now " + (AL.autoRemove ? "ON" : "OFF"))
+                            .append(Text.literal("Auto remove is now " + (AL.lec.Config.AutoRemove ? "ON" : "OFF"))
                                     .formatted(Formatting.WHITE)
                             )
                     );
@@ -250,13 +251,13 @@ public class AutoLec {
         assert world != null;
         if(enchantment != null) {
             assert enchantment.getKey().isPresent();
-            AL.getGoals().add(new ALGoal(enchantment.getKey().get().getValue(), newMinLvl, newMaxLvl, minPrice, maxPrice));
+            AL.lec.Config.Goals.add(new ALGoal(enchantment.getKey().get().getValue(), newMinLvl, newMaxLvl, minPrice, maxPrice));
         } else {
             world.getRegistryManager().getOrThrow(RegistryKeys.ENCHANTMENT)
                     .iterateEntries(EnchantmentTags.TRADEABLE)
                     .forEach(anyEnchant -> {
                                 assert anyEnchant.getKey().isPresent();
-                                AL.getGoals()
+                                AL.lec.Config.Goals
                                         .add(
                                                 new ALGoal(
                                                         anyEnchant.getKey().get().getValue(),
@@ -269,7 +270,7 @@ public class AutoLec {
                             }
                     );
         }
-        AL.incrementUUID();
+        AL.lec.incUUID();
     }
     private static ArgumentBuilder<ClientCommandSource, ?> createPriceSubCommand(final ArgumentBuilder<ClientCommandSource, ?> arg, final boolean has_enchantment, final int minLvl, final int maxLvl) {
         return arg.then(literal("min").executes(ctx -> {
@@ -336,7 +337,7 @@ public class AutoLec {
     private static int removeGoal(final ClientCommandSource src, final int index, final int uuid) {
         final var AL = AutoLectern.getInstance();
         final var chat = ((FakeCommandSource)src).mc.inGameHud.getChatHud();
-        if (uuid != -1 && uuid != AL.getUUID()) {
+        if (uuid != -1 && uuid != AL.lec.UUID) {
             ((FakeCommandSource)src).sendMessage(Text.literal("[Auto Lectern] ")
                     .formatted(Formatting.YELLOW)
                     .append(Text.literal("Command Expired.\nType \"/autolec list\" then choose again.")
@@ -346,12 +347,12 @@ public class AutoLec {
             chat.resetScroll();
             return 0;
         }
-        final var goals = AL.getGoals();
+        final var goals = AL.lec.Config.Goals;
         final var max = goals.size() - 1;
         if(max >= index) {
             goals.set(index, goals.get(max));
             goals.remove(max);
-            AL.incrementUUID();
+            AL.lec.incUUID();
             listGoals(src);
             chat.resetScroll();
             return 0;
@@ -395,11 +396,11 @@ public class AutoLec {
         );
         int i = 0;
         final var AL = AutoLectern.getInstance();
-        final var goals = AL.getGoals();
+        final var goals = AL.lec.Config.Goals;
         final var world = ((FakeCommandSource)source).mc.world;
         assert world != null;
         for (var goal : goals) {
-            final var enchant = AutoLectern.enchantFromIdentifier(world, goal.enchant());
+            final var enchant = EnchantUtility.enchantFromIdentifier(world, goal.enchant());
             if(enchant == null)
                 continue;
             ((FakeCommandSource)source).sendMessage(Text.literal("[" + i + "] ")
@@ -414,7 +415,7 @@ public class AutoLec {
                                 .append(Text.literal(" [REMOVE]")
                                         .setStyle(Style.EMPTY
                                                 .withClickEvent(new ClickEvent.RunCommand(
-                                                    "/autolec remove " + i + " " + AL.getUUID()
+                                                    "/autolec remove " + i + " " + AL.lec.UUID
                                                 ))
                                         ).formatted(Formatting.RED)
                                 )

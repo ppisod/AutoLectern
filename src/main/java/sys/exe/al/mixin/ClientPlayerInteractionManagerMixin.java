@@ -24,7 +24,7 @@ public class ClientPlayerInteractionManagerMixin {
     @Inject(method = "updateBlockBreakingProgress", at = @At("HEAD"))
     private void onUpdateBlockBreakingProgress(final BlockPos pos, final Direction direction, final CallbackInfoReturnable<Boolean> cir) {
         final var AL = AutoLectern.getInstance();
-        if(!AL.breakCooldown && AL.getState() == ALState.BREAKING)
+        if(!AL.lec.Config.BreakCooldown && AL.lec.getState() == ALState.BREAKING)
             this.blockBreakingCooldown = 0;
     }
 
@@ -35,7 +35,7 @@ public class ClientPlayerInteractionManagerMixin {
             return beforeRet;
         final var AL = AutoLectern.getInstance();
         final ALState state;
-        if(AL.preBreaking && (state = AL.getState()) != ALState.STOPPED && state != ALState.BREAKING)
+        if(AL.lec.Config.PreBreak && (state = AL.lec.getState()) != ALState.STOPPED && state != ALState.BREAKING)
             return 0.f;
         return beforeRet;
     }

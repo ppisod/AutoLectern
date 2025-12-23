@@ -43,6 +43,8 @@ import sys.exe.al.ALState;
 import sys.exe.al.AutoLectern;
 import sys.exe.al.commands.ClientCommandManager;
 import sys.exe.al.interfaces.ExtraVillagerData;
+import sys.exe.al.util.signals.SignalManager;
+import sys.exe.al.util.villager.EnchantUtility;
 
 import static sys.exe.al.AutoLectern.SIGNAL_ITEM;
 
@@ -120,7 +122,7 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
     @Inject(method = "onOpenScreen", at = @At("HEAD"), cancellable = true)
     private void onOpenScreen(final OpenScreenS2CPacket packet, final CallbackInfo ci) {
         final var AL = AutoLectern.getInstance();
-        if (AL.getState() != ALState.WAITING_TRADE) return;
+        if (AL.lec.getState() != ALState.WAITING_TRADE) return;
         if (packet.getScreenHandlerType() != ScreenHandlerType.MERCHANT)
             return;
         merchantSyncId = packet.getSyncId();
@@ -149,27 +151,27 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
     @Inject(method = "onEntityTrackerUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/data/DataTracker;writeUpdatedEntries(Ljava/util/List;)V", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILSOFT)
     private void onPostEntityTrackerUpdate(final EntityTrackerUpdateS2CPacket packet, final CallbackInfo ci, final Entity entity) {
         final var AL = AutoLectern.getInstance();
-        if (AL.getState() != ALState.WAITING_PROF ||
-                AL.getUpdatedVillager() != null)
+        if (AL.lec.getState() != ALState.WAITING_PROF ||
+                AL.lec.getFocusedVillager() != null)
             return;
         if (!(entity instanceof final VillagerEntity vil))
             return;
-        if (AL.getLecternPos().getSquaredDistance(vil.getEntityPos()) > 8)
+        if (AL.lec.getLecternPosition().pos.getSquaredDistance(vil.getEntityPos()) > 8)
             return;
         if (!vil.getVillagerData().profession().matchesKey(VillagerProfession.LIBRARIAN))
             return;
         if (((ExtraVillagerData) vil).autolec$getPrevProfession().matchesKey(VillagerProfession.LIBRARIAN))
             return;
-        AL.setUpdatedVillager(vil);
-        AL.signal(AutoLectern.SIGNAL_PROF);
+        AL.lec.setFocusedVillager(vil);
+        AL.lec.Signals.signal(SignalManager.Signal.PROF);
     }
 
     @Inject(method = "onItemPickupAnimation", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/ItemEntity;getStack()Lnet/minecraft/item/ItemStack;"), locals = LocalCapture.CAPTURE_FAILSOFT)
     private void onItemPickupAnimation(final ItemPickupAnimationS2CPacket packet, final CallbackInfo ci, final Entity entity, final LivingEntity livingEntity, final EntityRenderState entityRenderState, final ItemEntity itemEntity) {
         final var AL = AutoLectern.getInstance();
-        if (AL.getState() != ALState.WAITING_ITEM) return;
+        if (AL.lec.getState() != ALState.WAITING_ITEM) return;
         if (itemEntity.getStack().getItem() == Items.LECTERN)
-            AL.signal(SIGNAL_ITEM);
+            AL.lec.Signals.signal(SignalManager.Signal.ITEM);
     }
 
     @Unique
@@ -187,13 +189,13 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
             for (final var entry : enchantments.getEnchantmentEntries()) {
                 final var enchant = entry.getKey();
                 final var lvl = entry.getIntValue();
-                if (AL.logTrade) {
+                if (AL.lec.Config.LogTrade) {
                     plr.sendMessage(Text.literal("[Auto Lectern] ")
                                     .formatted(Formatting.YELLOW)
                                     .append(Text.literal(String.valueOf(offer.getOriginalFirstBuyItem().getCount()))
                                             .formatted(Formatting.GREEN).append(Text.literal(" emeralds for ")
                                                     .formatted(Formatting.WHITE)
-                                                    .append(Enchantment.getName(enchant, lvl)).append(Text.literal(" [" + AL.attempts + "]")
+                                                    .append(Enchantment.getName(enchant, lvl)).append(Text.literal(" [" + AL.lec.attempts + "]")
                                                             .formatted(Formatting.WHITE)
                                                     )
                                             )
@@ -201,9 +203,9 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
                             , false);
                 }
                 assert enchant.getKey().isPresent();
-                final var goalMet = AL.getGoalMet(plr.getEntityWorld(), offer.getOriginalFirstBuyItem().getCount(), enchant.getKey().get().getValue(), lvl);
+                final var goalMet = EnchantUtility.getGoalMet(plr.getEntityWorld(), offer.getOriginalFirstBuyItem().getCount(), enchant.getKey().get().getValue(), lvl, AL.lec.Config.Goals);
                 if (goalMet != -1) {
-                    AL.setLastGoalMet(goalMet);
+                    AL.lec.lastGoalMet = goalMet;
                     return curIdx;
                 }
             }
@@ -216,7 +218,7 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
         final var emptySlot = plr.getInventory().getEmptySlot();
         if (emptySlot == -1)
             return;
-        if (AL.autoTrade == ALAutoTrade.ENCHANT) {
+        if (AL.lec.Config.AutoTrade == ALAutoTrade.ENCHANT) {
             int availEmerald = 0;
             int availBook = 0;
             for (final var stack : plr.getInventory().getMainStacks()) {
@@ -255,16 +257,16 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
     private void determineTrades(final TradeOfferList offers) {
         final var AL = AutoLectern.getInstance();
         final ClientPlayerEntity plr;
-        if (AL.getState() != ALState.WAITING_TRADE || (plr = this.client.player) == null)
+        if (AL.lec.getState() != ALState.WAITING_TRADE || (plr = this.client.player) == null)
             return;
-        ++AL.attempts;
+        ++AL.lec.attempts;
         int tarIdx = checkTrades(AL, offers, plr);
         if (tarIdx == -1) {
-            AL.signal(AutoLectern.SIGNAL_TRADE);
+            AL.lec.Signals.signal(SignalManager.Signal.TRADE);
             return;
         }
-        AL.signal(AutoLectern.SIGNAL_TRADE | AutoLectern.SIGNAL_TRADE_OK);
-        if (AL.autoTrade != ALAutoTrade.OFF)
+        AL.lec.Signals.signal(SignalManager.Signal.TRADE, SignalManager.Signal.TRADE_OK);
+        if (AL.lec.Config.AutoTrade != ALAutoTrade.OFF)
             attemptLockTrade(AL, offers, plr, tarIdx);
     }
 

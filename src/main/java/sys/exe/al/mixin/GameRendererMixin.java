@@ -19,7 +19,7 @@ public class GameRendererMixin {
 
     @Inject(method = "render", at = @At("HEAD"))
     public void render(RenderTickCounter tickCounter, boolean tick, CallbackInfo ci) {
-        if (AutoLectern.getInstance().getState() != ALState.STOPPED)
+        if (AutoLectern.getInstance().lec.getState() != ALState.STOPPED)
             lastWindowFocusedTime = Util.getMeasuringTimeMs();
     }
 }
