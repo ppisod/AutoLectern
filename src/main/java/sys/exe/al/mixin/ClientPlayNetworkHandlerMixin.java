@@ -149,10 +149,11 @@ public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkH
     @Inject(method = "onEntityTrackerUpdate", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/data/DataTracker;writeUpdatedEntries(Ljava/util/List;)V", shift = At.Shift.AFTER), locals = LocalCapture.CAPTURE_FAILSOFT)
     private void onPostEntityTrackerUpdate(final EntityTrackerUpdateS2CPacket packet, final CallbackInfo ci, final Entity entity) {
         final var AL = AutoLectern.getInstance();
-        if (AL.lec.getState() != ALState.WAITING_PROF ||
-                AL.lec.getFocusedVillager() != null)
+        if (AL.lec.getState() != ALState.WAITING_PROF)
             return;
         if (!(entity instanceof final VillagerEntity vil))
+            return;
+        if (AL.lec.getFocusedVillager() != null && AL.lec.getFocusedVillager() != vil)
             return;
         if (AL.lec.getLecternPosition().pos.getSquaredDistance(vil.getEntityPos()) > 8)
             return;

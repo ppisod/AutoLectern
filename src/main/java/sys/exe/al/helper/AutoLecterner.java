@@ -149,7 +149,7 @@ public class AutoLecterner {
             return;
         }
         player.input = new DummyInput();
-        ExpectedPlayerPosition = new PositionData(player.getEntityPos(), player.getYaw(), player.getPitch());
+        ExpectedPlayerPosition = new PositionData(player.getEntityPos(), player.getPitch(), player.getYaw());
         LecternPosition = new BlockPosData(result.getBlockPos(), result.getSide());
         State = ALState.BREAKING;
     }
@@ -204,7 +204,10 @@ public class AutoLecterner {
     }
 
     private boolean WaitingForProfession (ClientPlayerEntity player, ClientWorld world, ClientPlayerInteractionManager interaction) {
-        if (!Signals.isSet(SignalManager.Signal.PROF)) {State = ALState.INTERACT_VIL; return false;}
+        if (Signals.isSet(SignalManager.Signal.PROF)) {
+            State = ALState.INTERACT_VIL;
+            return false;
+        }
 
         AntiDrift(player);
 
@@ -218,7 +221,7 @@ public class AutoLecterner {
             --DelayTicks;
             return true;
         }
-        State = ALState.BREAKING;
+        State = ALState.INTERACT_VIL;
         return false;
     }
 
@@ -227,7 +230,7 @@ public class AutoLecterner {
             Stop();
             return;
         }
-        DelayTicks = 5;
+        DelayTicks = 40;
         Signals.clearAll();
         State = ALState.WAITING_TRADE;
         final var villagePos = FocusedVillager.getEntityPos();
@@ -244,7 +247,19 @@ public class AutoLecterner {
 
     private boolean WaitingForTrade (final MinecraftClient mc, ClientPlayerEntity player) {
         if (!Signals.isSet(SignalManager.Signal.TRADE)) {
-            if (Signals.isSet(SignalManager.Signal.TRADE_OK)) {State = ALState.BREAKING; return false;}
+            AntiDrift(player);
+            if (DelayTicks > 0) {
+                if (Config.PreBreak) {
+                    PreBreak(player, mc.interactionManager, mc.world);
+                }
+                --DelayTicks;
+                return true;
+            }
+            State = ALState.BREAKING;
+            return false;
+        }
+
+        if (Signals.isSet(SignalManager.Signal.TRADE_OK)) {
             mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1));
             GLFW.glfwRequestWindowAttention(mc.getWindow().getHandle());
             final var goal = Config.Goals.get(lastGoalMet);
@@ -286,15 +301,8 @@ public class AutoLecterner {
             State = ALState.STOPPING;
             return false;
         }
-        AntiDrift(player);
-        if (DelayTicks > 0) {
-            if (Config.PreBreak) {
-                PreBreak(player, mc.interactionManager, mc.world);
-            }
-            --DelayTicks;
-            return true;
-        }
-        State = ALState.INTERACT_VIL;
+
+        State = ALState.BREAKING;
         return false;
     }
 
