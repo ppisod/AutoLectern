@@ -46,8 +46,6 @@ import sys.exe.al.interfaces.ExtraVillagerData;
 import sys.exe.al.util.signals.SignalManager;
 import sys.exe.al.util.villager.EnchantUtility;
 
-import static sys.exe.al.AutoLectern.SIGNAL_ITEM;
-
 @Mixin(ClientPlayNetworkHandler.class)
 public abstract class ClientPlayNetworkHandlerMixin extends ClientCommonNetworkHandler {
     @Shadow

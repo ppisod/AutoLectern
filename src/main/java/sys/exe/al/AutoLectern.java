@@ -42,5 +42,6 @@ public class AutoLectern implements ClientModInitializer {
     public void onInitializeClient() {
         File configFile = FabricLoader.getInstance().getConfigDir().resolve("autolec.txt").toFile();
         lec = new AutoLecterner(configFile);
+        INSTANCE = this;
     }
 }

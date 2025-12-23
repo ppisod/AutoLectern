@@ -92,6 +92,7 @@ public class AutoLecterner {
 
     public AutoLecterner(File config) {
         Config = new Config(config);
+        Signals = new SignalManager();
     }
 
     public void Tick (final MinecraftClient mc) {
